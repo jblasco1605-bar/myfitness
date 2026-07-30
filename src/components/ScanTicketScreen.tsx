@@ -8,6 +8,8 @@ interface ScanTicketScreenProps {
   onBack: () => void;
   onAnalyze: (file: File) => void;
   isAnalyzing: boolean;
+  error: string | null;
+  onFileChange?: () => void;
 }
 
 const LOADING_STEPS = [
@@ -23,6 +25,8 @@ export function ScanTicketScreen({
   onBack,
   onAnalyze,
   isAnalyzing,
+  error,
+  onFileChange,
 }: ScanTicketScreenProps) {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -37,6 +41,7 @@ export function ScanTicketScreen({
     if (!selected) return;
     setFile(selected);
     setPreviewUrl(selected.type === "application/pdf" ? null : URL.createObjectURL(selected));
+    onFileChange?.();
   };
 
   const handleAnalyze = () => {
@@ -90,6 +95,16 @@ export function ScanTicketScreen({
           {goal ? ` para tu objetivo: ${goal.title.toLowerCase()}` : ""}.
         </p>
       </header>
+
+      {error && (
+        <div
+          role="alert"
+          className="mb-4 flex items-start gap-2 rounded-card border border-danger/40 bg-danger-soft p-3 text-sm text-brand-text"
+        >
+          <span aria-hidden="true">⚠️</span>
+          <span>{error}</span>
+        </div>
+      )}
 
       <input
         ref={cameraInputRef}

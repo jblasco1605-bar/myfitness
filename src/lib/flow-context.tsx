@@ -23,6 +23,8 @@ interface FlowState {
   setRecipes: (recipes: Recipe[]) => void;
   history: HistoryEntry[];
   addHistoryEntry: (recipe: Recipe, rating: number) => void;
+  isDemoData: boolean;
+  setIsDemoData: (value: boolean) => void;
 }
 
 const FlowContext = createContext<FlowState | null>(null);
@@ -34,6 +36,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   const [pantry, setPantry] = useState<PantryStaple[]>(getDefaultPantryStaples());
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [isDemoData, setIsDemoData] = useState(false);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(HISTORY_STORAGE_KEY);
@@ -108,8 +111,10 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
           window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(next));
           return next;
         }),
+      isDemoData,
+      setIsDemoData,
     }),
-    [goalId, ticketFile, ingredients, pantry, recipes, history]
+    [goalId, ticketFile, ingredients, pantry, recipes, history, isDemoData]
   );
 
   return <FlowContext.Provider value={value}>{children}</FlowContext.Provider>;

@@ -13,6 +13,7 @@ export default function IngredientsPage() {
     updateIngredientQuantity,
     removeIngredient,
     addIngredient,
+    isDemoData,
   } = useFlow();
 
   useEffect(() => {
@@ -27,6 +28,7 @@ export default function IngredientsPage() {
       onAdd={addIngredient}
       onBack={() => router.push("/scan")}
       onContinue={() => router.push("/pantry")}
+      isDemoData={isDemoData}
     />
   );
 }

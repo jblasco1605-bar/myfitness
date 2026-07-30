@@ -16,6 +16,10 @@ const config: Config = {
           text: "#F5F7FA",
           textMuted: "#9AA6B2",
         },
+        danger: {
+          DEFAULT: "#F87171",
+          soft: "#3A1D1D",
+        },
         goal: {
           muscle: "#22C55E",
           muscleSoft: "#16321F",

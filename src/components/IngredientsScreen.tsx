@@ -11,6 +11,7 @@ interface IngredientsScreenProps {
   onAdd: (name: string) => void;
   onBack: () => void;
   onContinue: () => void;
+  isDemoData: boolean;
 }
 
 export function IngredientsScreen({
@@ -20,6 +21,7 @@ export function IngredientsScreen({
   onAdd,
   onBack,
   onContinue,
+  isDemoData,
 }: IngredientsScreenProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState("");
@@ -55,6 +57,16 @@ export function IngredientsScreen({
           hayamos detectado en el ticket.
         </p>
       </header>
+
+      {isDemoData && (
+        <div className="mb-4 flex items-start gap-2 rounded-card border border-brand-border bg-brand-surfaceAlt p-3 text-sm text-brand-textMuted">
+          <span aria-hidden="true">🧪</span>
+          <span>
+            Modo demo: la IA no está configurada en este entorno, así que estos
+            son ingredientes de ejemplo, no lo que hemos leído de tu ticket.
+          </span>
+        </div>
+      )}
 
       <div className="flex flex-col gap-2">
         {ingredients.length === 0 && (
