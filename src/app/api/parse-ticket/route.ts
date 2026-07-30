@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { callGroqJson } from "@/lib/groq";
 import { detectIngredientsFromTicket } from "@/lib/mock-data";
+import { classifyReceiptText } from "@/lib/receipt-heuristics";
 
 interface ParsedIngredient {
   name: string;
@@ -8,24 +9,23 @@ interface ParsedIngredient {
   unit: string;
 }
 
-interface ParseResult {
-  valid: boolean;
-  ingredients: ParsedIngredient[];
-}
-
 export async function POST(request: Request) {
   const { text } = (await request.json()) as { text: string };
   const cleaned = (text ?? "").trim();
 
-  // Si el OCR apenas ha extraído texto legible, ni siquiera merece la pena
-  // preguntarle a la IA: no puede ser un ticket de compra.
   if (cleaned.replace(/\s/g, "").length < 8) {
     return NextResponse.json({ valid: false, ingredients: [] });
   }
 
+  // Filtro rápido y determinista: si el texto ni siquiera tiene pinta de
+  // ticket (sin precios, sin palabras típicas de un ticket, casi sin líneas),
+  // lo rechazamos sin gastar una llamada a la IA ni arriesgarnos a que
+  // "adivine" productos de una foto que no tiene nada que ver.
+  if (classifyReceiptText(cleaned) === "unlikely") {
+    return NextResponse.json({ valid: false, ingredients: [] });
+  }
+
   if (!process.env.GROQ_API_KEY) {
-    // Modo demo explícito: sin clave configurada no podemos analizar nada de
-    // verdad, así que lo marcamos como tal en vez de fingir un análisis real.
     return NextResponse.json({
       valid: true,
       demo: true,
@@ -38,23 +38,20 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await callGroqJson<ParseResult>({
+    const result = await callGroqJson<{ ingredients: ParsedIngredient[] }>({
       system:
-        "Analizas texto en bruto (con posibles errores de OCR) extraído de una foto subida por un usuario. " +
-        "Primero decide si ese texto proviene realmente de un TICKET DE COMPRA de supermercado o alimentación " +
-        "(debe contener nombres de productos y, normalmente, precios, cantidades o el nombre de una tienda). " +
-        "Si el texto NO parece un ticket de compra (por ejemplo: describe una escena, una persona, un paisaje, " +
-        "un documento no relacionado, o es ilegible/sin sentido), responde EXACTAMENTE " +
-        '{"valid":false,"ingredients":[]}. No inventes productos en ese caso bajo ningún concepto. ' +
-        "Si SÍ es un ticket de compra, responde " +
-        '{"valid":true,"ingredients":[{"name":string,"quantity":number,"unit":string}]} usando SOLO los productos ' +
-        'que aparecen literalmente en el texto (normaliza el nombre a español sencillo, ej: "PECH POLLO FRESC" -> ' +
-        '"Pechuga de pollo"), sin añadir productos que no estén escritos. Si el ticket es válido pero no reconoces ' +
-        "ningún producto con claridad, devuelve ingredients:[] igualmente, sin inventar.",
+        "Extraes los alimentos comprados a partir del texto en bruto (con errores de OCR: letras mal leídas, líneas cortadas, " +
+        "acentos raros...) de la foto de un ticket de supermercado español. Es normal que el texto tenga ruido por el OCR — " +
+        "no lo rechaces por eso, haz tu mejor estimación igualmente. Ignora precios, códigos de barras, totales, IVA y el nombre " +
+        "de la tienda. Normaliza los nombres de producto a español genérico y sencillo " +
+        '(ej: "PECH POLLO FRESC" -> "Pechuga de pollo"). Estima una cantidad y unidad razonable si el ticket no la indica ' +
+        'claramente (unidades en "g", "ml" o "ud"). Si de verdad no consigues identificar ningún producto de alimentación en ' +
+        'el texto, devuelve una lista vacía en vez de inventar. Responde SOLO JSON con la forma ' +
+        '{"ingredients":[{"name":string,"quantity":number,"unit":string}]}.',
       user: cleaned,
     });
 
-    return NextResponse.json(result);
+    return NextResponse.json({ valid: true, ingredients: result.ingredients ?? [] });
   } catch (error) {
     return NextResponse.json(
       {
