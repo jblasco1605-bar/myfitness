@@ -53,6 +53,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ valid: true, ingredients: result.ingredients ?? [] });
   } catch (error) {
+    // Sin este log el fallo (p.ej. API key caducada) solo llega al usuario como un error genérico.
+    console.error("[parse-ticket] Error llamando a Groq:", error);
     return NextResponse.json(
       {
         valid: false,

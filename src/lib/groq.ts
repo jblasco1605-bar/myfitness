@@ -1,5 +1,6 @@
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODEL = "llama-3.3-70b-versatile";
+// Groq retira modelos cada cierto tiempo: se puede sobrescribir con GROQ_MODEL sin tocar código.
+const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
 
 interface GroqJsonOptions {
   system: string;
