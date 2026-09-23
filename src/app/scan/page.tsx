@@ -6,6 +6,7 @@ import { ScanTicketScreen } from "@/components/ScanTicketScreen";
 import { useFlow } from "@/lib/flow-context";
 import { createIngredient } from "@/lib/mock-data";
 import { extractTextFromImage } from "@/lib/ocr";
+import { extractTextFromPdf } from "@/lib/pdf";
 import type { Ingredient } from "@/lib/types";
 
 const INVALID_TICKET_MESSAGE =
@@ -13,9 +14,7 @@ const INVALID_TICKET_MESSAGE =
 const NO_PRODUCTS_MESSAGE =
   "Hemos leído la imagen pero no hemos reconocido ningún producto. Prueba con una foto más nítida y bien encuadrada.";
 const GENERIC_ERROR_MESSAGE =
-  "No hemos podido analizar la imagen. Inténtalo de nuevo.";
-const PDF_UNSUPPORTED_MESSAGE =
-  "De momento solo podemos leer tickets en foto o imagen. Sube una imagen (JPG/PNG) en vez de un PDF.";
+  "No hemos podido analizar el ticket. Inténtalo de nuevo.";
 
 export default function ScanPage() {
   const router = useRouter();
@@ -32,16 +31,13 @@ export default function ScanPage() {
     setError(null);
     setIsDemoData(false);
 
-    if (file.type === "application/pdf") {
-      // TODO: extraer texto real del PDF (p.ej. con pdf.js) para poder analizarlo de verdad.
-      setError(PDF_UNSUPPORTED_MESSAGE);
-      return;
-    }
-
     setIsAnalyzing(true);
 
     try {
-      const text = await extractTextFromImage(file);
+      const text =
+        file.type === "application/pdf"
+          ? await extractTextFromPdf(file)
+          : await extractTextFromImage(file);
 
       const res = await fetch("/api/parse-ticket", {
         method: "POST",
